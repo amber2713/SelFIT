@@ -1,5 +1,4 @@
 exports.handler = async (event, context) => {
-  // 仅允许 POST 请求
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -12,9 +11,11 @@ exports.handler = async (event, context) => {
 
     // 从环境变量读取 USTC 平台的 API Key
     const apiKey = process.env.USTC_API_KEY; 
-    const modelId = "qwen3.6-chat"; // 使用指定的模型名称
+    const modelId = "qwen3.6-chat"; 
 
-    // 封装符合 OpenAI 规范的图文混合多模态 messages 结构
+    // 【核心修复】：如果环境没有原生 fetch，主动 fallback 到模拟
+    const activeFetch = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
+
     const requestBody = {
       model: modelId,
       messages: [
@@ -28,7 +29,7 @@ exports.handler = async (event, context) => {
             {
               type: 'image_url',
               image_url: {
-                url: image // 前端传过来的 data:image/jpeg;base64,... 字符串
+                url: image
               }
             }
           ]
@@ -38,8 +39,8 @@ exports.handler = async (event, context) => {
       temperature: 0.3
     };
 
-    // 使用 Node 原生全局 fetch 请求 USTC 平台接口
-    const response = await fetch('https://api.llm.ustc.edu.cn/v1/chat/completions', {
+    // 使用兼容后的 activeFetch 发送请求
+    const response = await activeFetch('https://api.llm.ustc.edu.cn/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -50,7 +51,6 @@ exports.handler = async (event, context) => {
 
     const data = await response.json();
 
-    // 拦截处理诸如 401/403/429 等平台状态码错误
     if (!response.ok || data.error) {
       return {
         statusCode: response.status || 400,
@@ -58,12 +58,14 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 解析并提取模型生成的文本
     const aiAnalysisResult = data.choices[0].message.content;
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*' // 允许跨域顺便带上
+      },
       body: JSON.stringify({ report: aiAnalysisResult })
     };
 
@@ -71,7 +73,7 @@ exports.handler = async (event, context) => {
     console.error('USTC Analyze Function Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal Server Error' })
+      body: JSON.stringify({ error: error.message || 'Internal Server Error' })
     };
   }
 };
