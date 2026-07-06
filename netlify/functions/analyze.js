@@ -1,53 +1,80 @@
-import fetch from 'node-fetch'
+const fetch = require('node-fetch');
 
-export const handler = async (event, context) => {
-  // 跨域拦截与非 POST 请求拒绝
+exports.handler = async (event, context) => {
+  // 仅允许 POST 请求
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' }
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    const { image } = JSON.parse(event.body)
+    const { image } = JSON.parse(event.body);
     if (!image) {
-      return { statusCode: 400, body: JSON.stringify({ error: 'Missing image data' }) }
+      return { statusCode: 400, body: JSON.stringify({ error: 'Missing image data' }) };
     }
 
-    const apiKey = process.env.XUNFEI_API_KEY
-    const apiSecret = process.env.XUNFEI_API_SECRET
-    // 注意：实际开发中此处需依据讯飞星辰大模型的标准鉴权算法生成签名（通常包含时间戳、摘要等）
-    // 为了保证交付的代码可直接运行，此处展示标准的请求包体组装和 API 请求结构
+    // 从环境变量读取你的新版 Key 和 ModelID
+    const apiKey = process.env.XUNFEI_API_KEY;
+    const modelId = process.env.XUNFEI_MODEL_ID || 'xqwen2d5s32bvl'; // 依据文档示例默认或自定义
 
-    const response = await fetch('https://spark-api.xf-yun.com/v1.1/chat', {
+    // 1. 严格按照文档 2.2 与 2.2.1 要求的结构体封装 messages
+    const requestBody = {
+      model: modelId,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: '你是一位专业的 AI 物理治疗师与体态康复专家。请精确评估这张人体透视或实拍照片中的骨骼对齐与体态问题（如：高低肩、头前引、圆肩驼背、骨盆前倾等），并给出专业的诊断结论。'
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: image // 前端传过来的完整的 data:image/jpeg;base64,... 字符串
+              }
+            }
+          ]
+        }
+      ],
+      stream: false, // 统一转接不流式，一次性返回给前端
+      temperature: 0.3, // 降低随机性，保证评估结果科学准确
+      max_tokens: 2048
+    };
+
+    // 2. 发起符合 MaaS v2 协议的 HTTP POST 请求
+    const response = await fetch('https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}:${apiSecret}` // 示意结构，结合实际 Prompt 进行匹配
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        model: 'spark-vision', // 讯飞星辰多模态/视觉大模型示例
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: '请作为一名专业的 AI 运动康复专家，详细分析这张人体体态照片。请从以下几个维度输出文字报告：1. 头部与颈部（如是否有前倾、斜颈）；2. 肩部与锁骨（是否高低肩、圆肩）；3. 骨盆与下肢状况；4. 针对性纠正训练计划建议。请保持排版极简、专业、清晰。' },
-              { type: 'image_url', image_url: { url: image } } // 前端传入的 base64 字符串
-            ]
-          }
-        ]
-      })
-    })
+      body: JSON.stringify(requestBody)
+    });
 
-    const data = await response.json()
-    
+    const data = await response.json();
+
+    // 3. 拦截文档中提及的业务逻辑错误（如敏感词审核、授权错误）
+    if (data.error) {
+      return {
+        statusCode: response.status || 400,
+        body: JSON.stringify({ error: data.error.message || 'AI 诊断服务异常' })
+      };
+    }
+
+    // 4. 解析并提取大模型返回的文本内容
+    const aiAnalysisResult = data.choices[0].message.content;
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ report: data.choices[0].message.content || '未生成有效报告' })
-    }
+      body: JSON.stringify({ report: aiAnalysisResult })
+    };
+
   } catch (error) {
+    console.error('Analyze Function Error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message || 'Internal Server Error' })
-    }
+      body: JSON.stringify({ error: 'Internal Server Error' })
+    };
   }
-}
+};
