@@ -9,7 +9,6 @@ exports.handler = async (event, context) => {
     const apiKey = process.env.USTC_API_KEY;
     const modelId = "qwen3.6-chat"; 
 
-    // 构建上下文纯文本 Prompt
     let userPrompt = `我的健身/改善目标是：${target}。`;
     if (postureContext) {
       userPrompt += `结合我之前的体态诊断报告：【${postureContext}】，请为我量身定制一套规避体态风险、矫正体态并达成目标的健身训练计划教程。`;
@@ -26,8 +25,7 @@ exports.handler = async (event, context) => {
         }
       ],
       stream: false,
-      temperature: 0.5,
-      max_tokens: 2048
+      temperature: 0.5
     };
 
     const response = await fetch('https://api.llm.ustc.edu.cn/v1/chat/completions', {
