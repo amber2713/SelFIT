@@ -9,12 +9,8 @@ exports.handler = async (event, context) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing image data' }) };
     }
 
-    // 从环境变量读取 USTC 平台的 API Key
     const apiKey = process.env.USTC_API_KEY; 
     const modelId = "qwen3.6-chat"; 
-
-    // 【核心修复】：如果环境没有原生 fetch，主动 fallback 到模拟
-    const activeFetch = typeof fetch !== 'undefined' ? fetch : require('node-fetch');
 
     const requestBody = {
       model: modelId,
@@ -39,8 +35,8 @@ exports.handler = async (event, context) => {
       temperature: 0.3
     };
 
-    // 使用兼容后的 activeFetch 发送请求
-    const response = await activeFetch('https://api.llm.ustc.edu.cn/v1/chat/completions', {
+    // 直接使用环境自带的全局原生 fetch，没有任何第三方依赖包
+    const response = await fetch('https://api.llm.ustc.edu.cn/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -64,7 +60,7 @@ exports.handler = async (event, context) => {
       statusCode: 200,
       headers: { 
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*' // 允许跨域顺便带上
+        'Access-Control-Allow-Origin': '*'
       },
       body: JSON.stringify({ report: aiAnalysisResult })
     };
