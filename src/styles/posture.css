@@ -1,0 +1,64 @@
+.posture-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.upload-box {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 60px 40px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  transition: var(--transition-smooth);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.upload-box:hover, .upload-box.drag-active {
+  border-color: var(--accent-blue);
+  background: rgba(10, 132, 255, 0.05);
+}
+
+.upload-icon {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.preview-image-container {
+  width: 100%;
+  max-width: 400px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  margin-top: 24px;
+}
+
+.preview-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.report-card {
+  padding: 40px;
+  margin-top: 32px;
+  line-height: 1.8;
+  font-size: 16px;
+}
+
+.report-section {
+  margin-bottom: 28px;
+}
+
+.report-section h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-blue);
+  margin-bottom: 12px;
+  border-left: 4px solid var(--accent-blue);
+  padding-left: 10px;
+}

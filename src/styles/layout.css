@@ -1,0 +1,111 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-black);
+}
+
+.main-content {
+  flex: 1;
+  padding: 40px;
+  margin-left: 260px; /* 留出 PC 侧边栏宽度 */
+  min-height: 100vh;
+  transition: var(--transition-smooth);
+}
+
+/* PC 端侧边栏样式 */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 260px;
+  background: rgba(18, 18, 20, 0.6);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border-right: 1px solid var(--border-color);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 48px;
+  color: var(--text-primary);
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: var(--transition-smooth);
+}
+
+.nav-item:hover, .nav-item.active {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-item.active {
+  border-left: 4px solid var(--accent-blue);
+  padding-left: 12px;
+}
+
+/* 移动端底部导航栏样式 */
+.mobile-navbar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(18, 18, 20, 0.8);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border-top: 1px solid var(--border-color);
+  z-index: 100;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.mobile-nav-item.active {
+  color: var(--accent-blue);
+}
+
+/* 响应式断点切换 */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+  .mobile-navbar {
+    display: flex;
+  }
+  .main-content {
+    margin-left: 0;
+    padding: 24px 20px 88px 20px; /* 底部留出导航栏高度 */
+  }
+}
