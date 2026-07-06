@@ -10,11 +10,11 @@ exports.handler = async (event, context) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing image data' }) };
     }
 
-    // 从环境变量读取你的新版 Key 和 ModelID
-    const apiKey = process.env.XUNFEI_API_KEY;
-    const modelId = process.env.XUNFEI_MODEL_ID || 'xqwen2d5s32bvl'; // 依据文档示例默认或自定义
+    // 从环境变量读取 USTC 平台的 API Key
+    const apiKey = process.env.USTC_API_KEY; 
+    const modelId = "qwen3.6-chat"; // 使用指定的模型名称
 
-    // 1. 严格按照文档 2.2 与 2.2.1 要求的结构体封装 messages
+    // 封装符合 OpenAI 规范的图文混合多模态 messages 结构
     const requestBody = {
       model: modelId,
       messages: [
@@ -28,19 +28,18 @@ exports.handler = async (event, context) => {
             {
               type: 'image_url',
               image_url: {
-                url: image // 前端传过来的完整的 data:image/jpeg;base64,... 字符串
+                url: image // 前端传过来的 data:image/jpeg;base64,... 字符串
               }
             }
           ]
         }
       ],
-      stream: false, // 统一转接不流式，一次性返回给前端
-      temperature: 0.3, // 降低随机性，保证评估结果科学准确
-      max_tokens: 2048
+      stream: false, 
+      temperature: 0.3
     };
 
-    // 2. 发起符合 MaaS v2 协议的 HTTP POST 请求
-    const response = await fetch('https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions', {
+    // 使用 Node 原生全局 fetch 请求 USTC 平台接口
+    const response = await fetch('https://api.llm.ustc.edu.cn/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -51,15 +50,15 @@ exports.handler = async (event, context) => {
 
     const data = await response.json();
 
-    // 3. 拦截文档中提及的业务逻辑错误（如敏感词审核、授权错误）
-    if (data.error) {
+    // 拦截处理诸如 401/403/429 等平台状态码错误
+    if (!response.ok || data.error) {
       return {
         statusCode: response.status || 400,
-        body: JSON.stringify({ error: data.error.message || 'AI 诊断服务异常' })
+        body: JSON.stringify({ error: data?.error?.message || 'USTC 大模型平台服务异常' })
       };
     }
 
-    // 4. 解析并提取大模型返回的文本内容
+    // 解析并提取模型生成的文本
     const aiAnalysisResult = data.choices[0].message.content;
 
     return {
@@ -69,7 +68,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Analyze Function Error:', error);
+    console.error('USTC Analyze Function Error:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Internal Server Error' })
