@@ -6,8 +6,8 @@ exports.handler = async (event, context) => {
   try {
     const { target, postureContext } = JSON.parse(event.body);
 
-    const apiKey = process.env.XUNFEI_API_KEY;
-    const modelId = process.env.XUNFEI_TEXT_MODEL_ID || 'xqwen2d5s32bvl'; 
+    const apiKey = process.env.USTC_API_KEY;
+    const modelId = "qwen3.6-chat"; 
 
     // 构建上下文纯文本 Prompt
     let userPrompt = `我的健身/改善目标是：${target}。`;
@@ -22,20 +22,15 @@ exports.handler = async (event, context) => {
       messages: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: userPrompt
-            }
-          ]
+          content: userPrompt
         }
       ],
       stream: false,
-      temperature: 0.7,
-      max_tokens: 4096
+      temperature: 0.5,
+      max_tokens: 2048
     };
 
-    const response = await fetch('https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions', {
+    const response = await fetch('https://api.llm.ustc.edu.cn/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -46,10 +41,10 @@ exports.handler = async (event, context) => {
 
     const data = await response.json();
 
-    if (data.error) {
+    if (!response.ok || data.error) {
       return {
         statusCode: response.status || 400,
-        body: JSON.stringify({ error: data.error.message })
+        body: JSON.stringify({ error: data?.error?.message || 'USTC 大模型平台服务异常' })
       };
     }
 
@@ -62,7 +57,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Tutorial Function Error:', error);
+    console.error('USTC Tutorial Function Error:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Internal Server Error' })
